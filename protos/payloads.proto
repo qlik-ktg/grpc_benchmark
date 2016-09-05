@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package grpc.testing;
+
+message ByteBufferParams {
+  int32 req_size = 1;
+  int32 resp_size = 2;
+}
+
+message SimpleProtoParams {
+  int32 req_size = 1;
+  int32 resp_size = 2;
+}
+
+message ComplexProtoParams {
+  // TODO (vpai): Fill this in once the details of complex, representative
+  //              protos are decided
+}
+
+message PayloadConfig {
+  oneof payload {
+    ByteBufferParams bytebuf_params = 1;
+    SimpleProtoParams simple_params = 2;
+    ComplexProtoParams complex_params = 3;
+  }
+}
