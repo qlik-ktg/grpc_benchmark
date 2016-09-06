@@ -231,12 +231,15 @@ set(DEPENDENCIES_LIBRARIES
     )
 
 add_custom_target(headers SOURCES ${GRPC_BENCHMARK_HDRS})
-# server
-set(PRJ_SERVER_NAME "${PRJ_NAME}_server")
-add_executable(${PRJ_SERVER_NAME} main.cpp ${GRPC_BENCHMARK_SRC})
-target_link_libraries(${PRJ_SERVER_NAME} ${DEPENDENCIES_LIBRARIES})
+# # server
+# set(PRJ_SERVER_NAME "${PRJ_NAME}_server")
+# add_executable(${PRJ_SERVER_NAME} main.cpp ${GRPC_BENCHMARK_SRC})
+# target_link_libraries(${PRJ_SERVER_NAME} ${DEPENDENCIES_LIBRARIES})
 
-# client
-set(PRJ_CLIENT_NAME "${PRJ_NAME}_client")
-add_executable(${PRJ_CLIENT_NAME} worker.cpp ${GRPC_BENCHMARK_SRC})
-target_link_libraries(${PRJ_CLIENT_NAME} ${DEPENDENCIES_LIBRARIES})
+# qps_json_driver
+add_executable(qps_json_driver qps_json_driver.cpp ${GRPC_BENCHMARK_SRC})
+target_link_libraries(qps_json_driver ${DEPENDENCIES_LIBRARIES})
+
+# worker
+add_executable(qps_worker worker.cpp ${GRPC_BENCHMARK_SRC})
+target_link_libraries(qps_worker ${DEPENDENCIES_LIBRARIES})

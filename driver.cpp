@@ -177,7 +177,7 @@ std::unique_ptr<ScenarioResult> RunScenario(
     const ServerConfig result_server_config = initial_server_config;
 
     // Get client, server lists
-    auto workers = get_workers("WORKERS");
+    auto workers = get_workers("QPS_WORKERS");
     ClientConfig client_config = initial_client_config;
 
     // Spawn some local workers if desired
@@ -216,6 +216,7 @@ std::unique_ptr<ScenarioResult> RunScenario(
     // TODO(ctiller): support running multiple configurations, and binpack
     // client/server pairs
     // to available workers
+    std::cout << "workers.size = " << workers.size() << ", num_clients = " << num_clients << ", num_servers = " << num_servers << std::endl;
     GPR_ASSERT(workers.size() >= num_clients + num_servers);
 
     // Trim to just what we need
