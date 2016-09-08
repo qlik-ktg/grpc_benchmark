@@ -1,6 +1,5 @@
 #!/bin/bash
-
-# Copyright 2015, Google Inc.
+# Copyright 2016, Google Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,15 +28,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# set -ex
+set -ex
 
-#pwd
-cd $(dirname $0)/../../../grpc_benchmark-build
-# pwd
+pwd
+cd $(dirname $0)/../../
+pwd
 
-./qps_json_driver "$@"
-
-if [ "$BQ_RESULT_TABLE" != "" ]
-then
-  ../grpc_benchmark/scripts/performance/bq_upload_result.py --bq_result_table="$BQ_RESULT_TABLE"
-fi
+PYTHONPATH=src/python/grpcio_tests:src/python/gens /usr/bin/python src/python/grpcio_tests/tests/qps/qps_worker.py $@

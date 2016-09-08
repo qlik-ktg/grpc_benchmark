@@ -104,7 +104,7 @@ def create_scenario_jobspec(scenario_json, workers, remote_host=None,
     cmd += 'BQ_RESULT_TABLE="%s" ' % bq_result_table
   cmd += '../grpc_benchmark/scripts/performance/run_qps_driver.sh '
   cmd += '--scenarios_json=%s ' % pipes.quote(json.dumps({'scenarios': [scenario_json]}))
-  cmd += '--scenario_result_file=scenario_result.json'
+  cmd += '--scenario_result_file=%s' % scenario_json['name']
   if remote_host:
     user_at_host = '%s@%s' % (_REMOTE_HOST_USERNAME, remote_host)
     cmd = 'ssh %s "cd ~/performance_workspace/grpc/ && "%s' % (user_at_host, pipes.quote(cmd))

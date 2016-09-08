@@ -29,6 +29,8 @@
 
 # performance scenario configuration for various languages
 
+import os
+
 WARMUP_SECONDS=5
 JAVA_WARMUP_SECONDS=15  # Java needs more warmup time for JIT to kick in.
 BENCHMARK_SECONDS=30
@@ -50,9 +52,15 @@ EMPTY_GENERIC_PAYLOAD = {
     'resp_size': 0,
   }
 }
+# EMPTY_PROTO_PAYLOAD = {
+#   'simple_params': {
+#     'req_size': 0,
+#     'resp_size': 0,
+#   }
+# }
 EMPTY_PROTO_PAYLOAD = {
   'simple_params': {
-    'req_size': 0,
+    'req_size': 1048576,
     'resp_size': 0,
   }
 }
@@ -242,6 +250,83 @@ class CXXLanguage:
     return 'c++'
 
 
+class CXXLanguageExt:
+
+  def __init__(self):
+    self.safename = 'cxxExt'
+    self.core_limit = 4
+    self.async_threads = 4
+
+  def worker_cmdline(self):
+    return ['./qps_worker']
+
+  def worker_port_offset(self):
+    return 0
+
+  def scenarios(self):
+    # TODO(ctiller): add 70% load latency test
+    for secure in [True, False]:
+      secstr = 'secure' if secure else 'insecure'
+      smoketest_categories = [SMOKETEST] if secure else []
+
+      yield _ping_pong_scenario(
+          'cpp_generic_async_streaming_ping_pong_%s' % secstr, rpc_type='STREAMING',
+          client_type='ASYNC_CLIENT', server_type='ASYNC_GENERIC_SERVER',
+          use_generic_payload=True, server_core_limit=self.core_limit, async_server_threads=self.async_threads,
+          secure=secure,
+          categories=smoketest_categories)
+
+      yield _ping_pong_scenario(
+          'cpp_protobuf_async_streaming_ping_pong_%s' % secstr, rpc_type='STREAMING',
+          client_type='ASYNC_CLIENT', server_type='ASYNC_SERVER',
+          server_core_limit=self.core_limit, async_server_threads=self.async_threads,
+          secure=secure)
+
+      yield _ping_pong_scenario(
+          'cpp_protobuf_async_unary_ping_pong_%s' % secstr, rpc_type='UNARY',
+          client_type='ASYNC_CLIENT', server_type='ASYNC_SERVER',
+          server_core_limit=self.core_limit, async_server_threads=self.async_threads,
+          secure=secure,
+          categories=smoketest_categories)
+
+      yield _ping_pong_scenario(
+          'cpp_protobuf_sync_unary_ping_pong_%s' % secstr, rpc_type='UNARY',
+          client_type='SYNC_CLIENT', server_type='SYNC_SERVER',
+          server_core_limit=self.core_limit, async_server_threads=self.async_threads,
+          secure=secure)
+
+      yield _ping_pong_scenario(
+          'cpp_protobuf_async_unary_qps_unconstrained_%s' % secstr, rpc_type='UNARY',
+          client_type='ASYNC_CLIENT', server_type='ASYNC_SERVER',
+          unconstrained_client='async',
+          secure=secure,
+          categories=smoketest_categories+[SCALABLE])
+
+      yield _ping_pong_scenario(
+          'cpp_protobuf_async_streaming_qps_unconstrained_%s' % secstr, rpc_type='STREAMING',
+          client_type='ASYNC_CLIENT', server_type='ASYNC_SERVER',
+          unconstrained_client='async',
+          secure=secure,
+          categories=[SCALABLE])
+
+      yield _ping_pong_scenario(
+          'cpp_generic_async_streaming_qps_unconstrained_%s' % secstr, rpc_type='STREAMING',
+          client_type='ASYNC_CLIENT', server_type='ASYNC_GENERIC_SERVER',
+          unconstrained_client='async', use_generic_payload=True,
+          secure=secure,
+          categories=smoketest_categories+[SCALABLE])
+
+      yield _ping_pong_scenario(
+          'cpp_generic_async_streaming_qps_one_server_core_%s' % secstr, rpc_type='STREAMING',
+          client_type='ASYNC_CLIENT', server_type='ASYNC_GENERIC_SERVER',
+          unconstrained_client='async', use_generic_payload=True,
+          server_core_limit=self.core_limit, async_server_threads=self.async_threads,
+          secure=secure)
+
+  def __str__(self):
+    return 'c++Ext'
+
+
 class CSharpLanguage:
 
   def __init__(self):
@@ -381,100 +466,55 @@ class PythonLanguage:
     self.safename = 'python'
 
   def worker_cmdline(self):
-    return ['tools/run_tests/performance/run_worker_python.sh']
+    # return ['../grpc_benchmark/scripts/performance/run_worker_python.sh']
+    return [ os.environ.get('RUN_WORKER_PYTHON_SH','/home/khoanguyen/data/github/grpc/src/python/grpcio_tests/tests/qps/qps_worker.py') ]
 
   def worker_port_offset(self):
     return 500
 
   def scenarios(self):
-    yield _ping_pong_scenario(
-        'python_generic_sync_streaming_ping_pong', rpc_type='STREAMING',
-        client_type='SYNC_CLIENT', server_type='ASYNC_GENERIC_SERVER',
-        use_generic_payload=True,
-        categories=[SMOKETEST])
+    # yield _ping_pong_scenario(
+    #     'python_generic_sync_streaming_ping_pong', rpc_type='STREAMING',
+    #     client_type='SYNC_CLIENT', server_type='ASYNC_GENERIC_SERVER',
+    #     use_generic_payload=True,
+    #     categories=[SMOKETEST])
 
     yield _ping_pong_scenario(
         'python_protobuf_sync_streaming_ping_pong', rpc_type='STREAMING',
         client_type='SYNC_CLIENT', server_type='ASYNC_SERVER')
 
-    yield _ping_pong_scenario(
-        'python_protobuf_async_unary_ping_pong', rpc_type='UNARY',
-        client_type='ASYNC_CLIENT', server_type='ASYNC_SERVER')
+    # yield _ping_pong_scenario(
+    #     'python_protobuf_async_unary_ping_pong', rpc_type='UNARY',
+    #     client_type='ASYNC_CLIENT', server_type='ASYNC_SERVER')
+    #
+    # yield _ping_pong_scenario(
+    #     'python_protobuf_sync_unary_ping_pong', rpc_type='UNARY',
+    #     client_type='SYNC_CLIENT', server_type='ASYNC_SERVER',
+    #     categories=[SMOKETEST])
+    #
+    # yield _ping_pong_scenario(
+    #     'python_protobuf_sync_unary_qps_unconstrained', rpc_type='UNARY',
+    #     client_type='SYNC_CLIENT', server_type='ASYNC_SERVER',
+    #     unconstrained_client='sync')
+    #
+    # yield _ping_pong_scenario(
+    #     'python_protobuf_sync_streaming_qps_unconstrained', rpc_type='STREAMING',
+    #     client_type='SYNC_CLIENT', server_type='ASYNC_SERVER',
+    #     unconstrained_client='sync')
+    #
+    # yield _ping_pong_scenario(
+    #     'python_to_cpp_protobuf_sync_unary_ping_pong', rpc_type='UNARY',
+    #     client_type='SYNC_CLIENT', server_type='ASYNC_SERVER',
+    #     server_language='c++', server_core_limit=1, async_server_threads=1,
+    #     categories=[SMOKETEST])
 
-    yield _ping_pong_scenario(
-        'python_protobuf_sync_unary_ping_pong', rpc_type='UNARY',
-        client_type='SYNC_CLIENT', server_type='ASYNC_SERVER',
-        categories=[SMOKETEST])
-
-    yield _ping_pong_scenario(
-        'python_protobuf_sync_unary_qps_unconstrained', rpc_type='UNARY',
-        client_type='SYNC_CLIENT', server_type='ASYNC_SERVER',
-        unconstrained_client='sync')
-
-    yield _ping_pong_scenario(
-        'python_protobuf_sync_streaming_qps_unconstrained', rpc_type='STREAMING',
-        client_type='SYNC_CLIENT', server_type='ASYNC_SERVER',
-        unconstrained_client='sync')
-
-    yield _ping_pong_scenario(
-        'python_to_cpp_protobuf_sync_unary_ping_pong', rpc_type='UNARY',
-        client_type='SYNC_CLIENT', server_type='ASYNC_SERVER',
-        server_language='c++', server_core_limit=1, async_server_threads=1,
-        categories=[SMOKETEST])
-
-    yield _ping_pong_scenario(
-        'python_to_cpp_protobuf_sync_streaming_ping_pong', rpc_type='STREAMING',
-        client_type='SYNC_CLIENT', server_type='ASYNC_SERVER',
-        server_language='c++', server_core_limit=1, async_server_threads=1)
+    # yield _ping_pong_scenario(
+    #     'python_to_cpp_protobuf_sync_streaming_ping_pong', rpc_type='STREAMING',
+    #     client_type='SYNC_CLIENT', server_type='ASYNC_SERVER',
+    #     server_language='c++', server_core_limit=1, async_server_threads=1)
 
   def __str__(self):
     return 'python'
-
-class RubyLanguage:
-
-  def __init__(self):
-    pass
-    self.safename = str(self)
-
-  def worker_cmdline(self):
-    return ['tools/run_tests/performance/run_worker_ruby.sh']
-
-  def worker_port_offset(self):
-    return 300
-
-  def scenarios(self):
-    yield _ping_pong_scenario(
-        'ruby_protobuf_sync_streaming_ping_pong', rpc_type='STREAMING',
-        client_type='SYNC_CLIENT', server_type='SYNC_SERVER',
-        categories=[SMOKETEST])
-
-    yield _ping_pong_scenario(
-        'ruby_protobuf_unary_ping_pong', rpc_type='UNARY',
-        client_type='SYNC_CLIENT', server_type='SYNC_SERVER',
-        categories=[SMOKETEST])
-
-    yield _ping_pong_scenario(
-        'ruby_protobuf_sync_unary_qps_unconstrained', rpc_type='UNARY',
-        client_type='SYNC_CLIENT', server_type='SYNC_SERVER',
-        unconstrained_client='sync')
-
-    yield _ping_pong_scenario(
-        'ruby_protobuf_sync_streaming_qps_unconstrained', rpc_type='STREAMING',
-        client_type='SYNC_CLIENT', server_type='SYNC_SERVER',
-        unconstrained_client='sync')
-
-    yield _ping_pong_scenario(
-        'ruby_to_cpp_protobuf_sync_unary_ping_pong', rpc_type='UNARY',
-        client_type='SYNC_CLIENT', server_type='SYNC_SERVER',
-        server_language='c++', server_core_limit=1, async_server_threads=1)
-
-    yield _ping_pong_scenario(
-        'ruby_to_cpp_protobuf_sync_streaming_ping_pong', rpc_type='STREAMING',
-        client_type='SYNC_CLIENT', server_type='SYNC_SERVER',
-        server_language='c++', server_core_limit=1, async_server_threads=1)
-
-  def __str__(self):
-    return 'ruby'
 
 
 class JavaLanguage:
@@ -554,83 +594,11 @@ class JavaLanguage:
     return 'java'
 
 
-class GoLanguage:
-
-  def __init__(self):
-    pass
-    self.safename = str(self)
-
-  def worker_cmdline(self):
-    return ['tools/run_tests/performance/run_worker_go.sh']
-
-  def worker_port_offset(self):
-    return 600
-
-  def scenarios(self):
-    for secure in [True, False]:
-      secstr = 'secure' if secure else 'insecure'
-      smoketest_categories = [SMOKETEST] if secure else []
-
-      # ASYNC_GENERIC_SERVER for Go actually uses a sync streaming server,
-      # but that's mostly because of lack of better name of the enum value.
-      yield _ping_pong_scenario(
-          'go_generic_sync_streaming_ping_pong_%s' % secstr, rpc_type='STREAMING',
-          client_type='SYNC_CLIENT', server_type='ASYNC_GENERIC_SERVER',
-          use_generic_payload=True, async_server_threads=1,
-          secure=secure,
-          categories=smoketest_categories)
-
-      yield _ping_pong_scenario(
-          'go_protobuf_sync_streaming_ping_pong_%s' % secstr, rpc_type='STREAMING',
-          client_type='SYNC_CLIENT', server_type='SYNC_SERVER',
-          async_server_threads=1,
-          secure=secure)
-
-      yield _ping_pong_scenario(
-          'go_protobuf_sync_unary_ping_pong_%s' % secstr, rpc_type='UNARY',
-          client_type='SYNC_CLIENT', server_type='SYNC_SERVER',
-          async_server_threads=1,
-          secure=secure,
-          categories=smoketest_categories)
-
-      # unconstrained_client='async' is intended (client uses goroutines)
-      yield _ping_pong_scenario(
-          'go_protobuf_sync_unary_qps_unconstrained_%s' % secstr, rpc_type='UNARY',
-          client_type='SYNC_CLIENT', server_type='SYNC_SERVER',
-          unconstrained_client='async',
-          secure=secure,
-          categories=smoketest_categories+[SCALABLE])
-
-      # unconstrained_client='async' is intended (client uses goroutines)
-      yield _ping_pong_scenario(
-          'go_protobuf_sync_streaming_qps_unconstrained_%s' % secstr, rpc_type='STREAMING',
-          client_type='SYNC_CLIENT', server_type='SYNC_SERVER',
-          unconstrained_client='async',
-          secure=secure,
-          categories=[SCALABLE])
-
-      # unconstrained_client='async' is intended (client uses goroutines)
-      # ASYNC_GENERIC_SERVER for Go actually uses a sync streaming server,
-      # but that's mostly because of lack of better name of the enum value.
-      yield _ping_pong_scenario(
-          'go_generic_sync_streaming_qps_unconstrained_%s' % secstr, rpc_type='STREAMING',
-          client_type='SYNC_CLIENT', server_type='ASYNC_GENERIC_SERVER',
-          unconstrained_client='async', use_generic_payload=True,
-          secure=secure,
-          categories=[SCALABLE])
-
-      # TODO(jtattermusch): add scenarios go vs C++
-
-  def __str__(self):
-    return 'go'
-
-
 LANGUAGES = {
     'c++' : CXXLanguage(),
+    'c++Ext': CXXLanguageExt(),
     'csharp' : CSharpLanguage(),
     'node' : NodeLanguage(),
-    'ruby' : RubyLanguage(),
     'java' : JavaLanguage(),
-    'python' : PythonLanguage(),
-    'go' : GoLanguage(),
+    'python' : PythonLanguage()
 }
