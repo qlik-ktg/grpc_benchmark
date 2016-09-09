@@ -52,15 +52,9 @@ EMPTY_GENERIC_PAYLOAD = {
     'resp_size': 0,
   }
 }
-# EMPTY_PROTO_PAYLOAD = {
-#   'simple_params': {
-#     'req_size': 0,
-#     'resp_size': 0,
-#   }
-# }
 EMPTY_PROTO_PAYLOAD = {
   'simple_params': {
-    'req_size': 1048576,
+    'req_size': 0,
     'resp_size': 0,
   }
 }
@@ -68,6 +62,12 @@ BIG_GENERIC_PAYLOAD = {
   'bytebuf_params': {
     'req_size': 65536,
     'resp_size': 65536,
+  }
+}
+BIG_PROTO_PAYLOAD = {
+  'simple_params': {
+    'req_size': 65536,
+    'resp_size': 0,
   }
 }
 
@@ -103,6 +103,7 @@ def _ping_pong_scenario(name, rpc_type,
                         client_type, server_type,
                         secure=True,
                         use_generic_payload=False,
+                        use_big_payload=False,
                         unconstrained_client=None,
                         client_language=None,
                         server_language=None,
@@ -142,8 +143,12 @@ def _ping_pong_scenario(name, rpc_type,
     scenario['client_config']['payload_config'] = EMPTY_GENERIC_PAYLOAD
     scenario['server_config']['payload_config'] = EMPTY_GENERIC_PAYLOAD
   else:
-    # For proto payload, only the client should get the config.
-    scenario['client_config']['payload_config'] = EMPTY_PROTO_PAYLOAD
+    if use_big_payload:
+      # For proto payload, only the client should get the config.
+      scenario['client_config']['payload_config'] = BIG_PROTO_PAYLOAD
+    else:
+      # For proto payload, only the client should get the config.
+      scenario['client_config']['payload_config'] = EMPTY_PROTO_PAYLOAD
 
   if unconstrained_client:
     if unconstrained_client == 'async':
