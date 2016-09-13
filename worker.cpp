@@ -6,6 +6,7 @@
 #include <gflags/gflags.h>
 #include <grpc/grpc.h>
 #include <grpc/support/time.h>
+#include <grpc/support/log.h>
 
 #include "qps_worker.h"
 #include "utils/test_config_cpp.h"
@@ -38,6 +39,8 @@ int main(int argc, char** argv) {
 
     signal(SIGINT, sigint_handler);
 
+    gpr_log_verbosity_init();
+    gpr_set_log_verbosity(GPR_LOG_SEVERITY_DEBUG);
     grpc::testing::RunServer();
 
     return 0;

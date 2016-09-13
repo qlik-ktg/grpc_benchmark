@@ -1,0 +1,56 @@
+yield _ping_pong_scenario(
+          'cpp_protobuf_async_streaming_ping_pong_%s' % secstr, rpc_type='STREAMING',
+          client_type='ASYNC_CLIENT', server_type='ASYNC_SERVER',
+          server_core_limit=1, async_server_threads=1,
+          secure=secure)
+
+{
+  "scenarios": [
+    {
+      "name": "cpp_protobuf_async_streaming_ping_pong_insecure",
+      "warmup_seconds": 5,
+      "benchmark_seconds": 30,
+      "num_servers": 1,
+      "server_config": {
+        "async_server_threads": 1,
+        "core_limit": 1,
+        "security_params": {
+          "use_test_ca": true,
+          "server_host_override": "foo.test.google.fr"
+        },
+        "payload_config": {
+          "bytebuf_params": {
+            "resp_size": 65536,
+            "req_size": 0
+          }
+        },
+        "server_type": "ASYNC_GENERIC_SERVER"
+      },
+      "client_config": {
+        "client_type": "ASYNC_CLIENT",
+        "security_params": {
+          "use_test_ca": true,
+          "server_host_override": "foo.test.google.fr"
+        },
+        "payload_config": {
+          "bytebuf_params": {
+            "resp_size": 0,
+            "req_size": 0
+          }
+        },
+        "client_channels": 1,
+        "async_client_threads": 1,
+        "outstanding_rpcs_per_channel": 1,
+        "rpc_type": "STREAMING",
+        "load_params": {
+          "closed_loop": {}
+        },
+        "histogram_params": {
+          "max_possible": 60000000000.0,
+          "resolution": 0.01
+        }
+      },
+      "num_clients": 1
+    }
+  ]
+}

@@ -248,11 +248,13 @@ static std::unique_ptr<BenchmarkService::Stub> BenchmarkStubCreator(std::shared_
 }
 
 class AsyncUnaryClient GRPC_FINAL
-: public AsyncClient<BenchmarkService::Stub, SimpleRequest> {
+	: public AsyncClient<BenchmarkService::Stub, SimpleRequest>
+{
 public:
     explicit AsyncUnaryClient(const ClientConfig& config)
-    : AsyncClient<BenchmarkService::Stub, SimpleRequest>(
-            config, SetupCtx, BenchmarkStubCreator) {
+    	: AsyncClient<BenchmarkService::Stub, SimpleRequest>(
+            config, SetupCtx, BenchmarkStubCreator)
+	{
         StartThreads(num_async_threads_);
     }
     ~AsyncUnaryClient() GRPC_OVERRIDE {}
@@ -276,23 +278,26 @@ class ClientRpcContextStreamingImpl: public ClientRpcContext {
 public:
     ClientRpcContextStreamingImpl(BenchmarkService::Stub* stub,
             const RequestType& req, std::function<gpr_timespec()> next_issue,
-            std::function<
-                    std::unique_ptr<
-                            grpc::ClientAsyncReaderWriter<RequestType,
-                                    ResponseType>>(BenchmarkService::Stub*,
-                            grpc::ClientContext*, CompletionQueue*, void*)> start_req,
+            std::function<std::unique_ptr<
+				grpc::ClientAsyncReaderWriter<RequestType,ResponseType>>(
+						BenchmarkService::Stub*, grpc::ClientContext*, CompletionQueue*, void*)>
+    			start_req,
             std::function<void(grpc::Status, ResponseType*)> on_done)
-            : context_(), stub_(stub), cq_(nullptr), req_(req), response_(), next_state_(
+		: context_(), stub_(stub), cq_(nullptr), req_(req), response_(), next_state_(
                     State::INVALID), callback_(on_done), next_issue_(
-                    next_issue), start_req_(start_req) {
+                    next_issue), start_req_(start_req)
+	{
     }
+
     ~ClientRpcContextStreamingImpl() GRPC_OVERRIDE {
     }
+
     void Start(CompletionQueue* cq) GRPC_OVERRIDE {
         cq_ = cq;
         stream_ = start_req_(stub_, &context_, cq, ClientRpcContext::tag(this));
         next_state_ = State::STREAM_IDLE;
     }
+
     bool RunNextState(bool ok, HistogramEntry* entry) GRPC_OVERRIDE {
         while (true) {
             switch (next_state_) {
@@ -305,8 +310,7 @@ public:
                 break;  // loop around, don't return
             case State::WAIT:
                 alarm_.reset(
-                        new Alarm(cq_, next_issue_(),
-                                ClientRpcContext::tag(this)));
+                        new Alarm(cq_, next_issue_(), ClientRpcContext::tag(this)));
                 next_state_ = State::READY_TO_WRITE;
                 return true;
             case State::READY_TO_WRITE:
@@ -365,11 +369,13 @@ private:
 };
 
 class AsyncStreamingClient GRPC_FINAL
-: public AsyncClient<BenchmarkService::Stub, SimpleRequest> {
+	: public AsyncClient<BenchmarkService::Stub, SimpleRequest>
+{
 public:
     explicit AsyncStreamingClient(const ClientConfig& config)
-    : AsyncClient<BenchmarkService::Stub, SimpleRequest>(
-            config, SetupCtx, BenchmarkStubCreator) {
+    	: AsyncClient<BenchmarkService::Stub, SimpleRequest>(
+            config, SetupCtx, BenchmarkStubCreator)
+	{
         StartThreads(num_async_threads_);
     }
 
@@ -380,13 +386,15 @@ private:
     static std::unique_ptr<
     grpc::ClientAsyncReaderWriter<SimpleRequest, SimpleResponse>>
     StartReq(BenchmarkService::Stub* stub, grpc::ClientContext* ctx,
-            CompletionQueue* cq, void* tag) {
+            CompletionQueue* cq, void* tag)
+	{
         auto stream = stub->AsyncStreamingCall(ctx, cq, tag);
         return stream;
     };
     static ClientRpcContext* SetupCtx(BenchmarkService::Stub* stub,
             std::function<gpr_timespec()> next_issue,
-            const SimpleRequest& req) {
+            const SimpleRequest& req)
+    {
         return new ClientRpcContextStreamingImpl<SimpleRequest, SimpleResponse>(
                 stub, req, next_issue, AsyncStreamingClient::StartReq,
                 AsyncStreamingClient::CheckDone);
@@ -493,7 +501,8 @@ static std::unique_ptr<grpc::GenericStub> GenericStubCreator(
 }
 
 class GenericAsyncStreamingClient GRPC_FINAL
-: public AsyncClient<grpc::GenericStub, ByteBuffer> {
+	: public AsyncClient<grpc::GenericStub, ByteBuffer>
+{
 public:
     explicit GenericAsyncStreamingClient(const ClientConfig& config)
     : AsyncClient<grpc::GenericStub, ByteBuffer>(config, SetupCtx,

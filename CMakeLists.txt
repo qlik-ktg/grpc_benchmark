@@ -6,11 +6,23 @@ cmake_minimum_required(VERSION 2.8)
 find_package(GTest REQUIRED)
 
 # protobuf
-set(PROTOBUF_ROOT_DIR "/opt/protobuf")
-set(GRPC_ROOT_DIR "/opt/grpc")
-set(GRPC_CPP_PLUGIN "grpc_cpp_plugin")
-include(FindProtobuf)
-find_package(Protobuf REQUIRED)
+# FindProtobuf package in CMake was tailored to Windows environment.
+# We use hard-coded path on Linux for now.
+if(MSVC)
+    include(FindProtobuf)
+    find_package(Protobuf REQUIRED)
+else()
+    set(PROTOBUF_ROOT_DIR "/opt/protobuf")
+    set(PROTOBUF_INCLUDE_DIR "${PROTOBUF_ROOT_DIR}/include")
+    set(PROTOBUF_LIBRARY_DIR "${PROTOBUF_ROOT_DIR}/lib")
+    set(PROTOBUF_PROTOC_EXECUTABLE "${PROTOBUF_ROOT_DIR}/bin/protoc")
+    set(PROTOBUF_LIBRARY "protobuf")
+    set(GRPC_ROOT_DIR "/opt/grpc")
+    set(GRPC_LIBRARY_DIR "${GRPC_ROOT_DIR}/lib")
+    set(GRPC_INCLUDE_DIR "${GRPC_ROOT_DIR}/include")
+    set(GRPC_CPP_PLUGIN "grpc_cpp_plugin")
+    set(GRPC_LIBRARY "grpc++ grpc")
+endif()
 
 set(PROTO_PATH "${CMAKE_SOURCE_DIR}/protos")
 set(GENERATED_PROTOBUF_PATH "${CMAKE_BINARY_DIR}/generated")
@@ -216,7 +228,7 @@ include_directories(
     ${GRPC_INCLUDE}
     ${GTEST_INCLUDE_DIRS}
     )
-link_directories(${Boost_LIBRARY_DIRS} ${USER_LIB_PATH} "/opt/grpc/lib" "/opt/protobuf/lib")
+link_directories(${Boost_LIBRARY_DIRS} ${USER_LIB_PATH} ${GRPC_LIBRARY_DIR} ${PROTOBUF_LIBRARY_DIR})
 
 set(DEPENDENCIES_LIBRARIES
     grpc++
@@ -225,7 +237,6 @@ set(DEPENDENCIES_LIBRARIES
     gflags
     gtest
     ${Boost_LIBRARIES}
-    ${PROTOBUF_LIBRARY}
     ${GTEST_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     )

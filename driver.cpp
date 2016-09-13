@@ -163,11 +163,65 @@ struct ClientData {
 };
 }  // namespace runsc
 
+bool ChunkWrite(runsc::ServerData* dest, ServerArgs& mark) {
+	const auto& config = mark.setup();
+	const auto& payloadConfig = config.payload_config();
+	const auto& protoParams = payloadConfig.simple_params();
+	const auto& requestSize = protoParams.req_size();
+
+	static const int maxSplitSize = 1024*1024;
+	const int numMessages = requestSize / maxSplitSize;
+	bool bResult = true;
+	if (requestSize > maxSplitSize || numMessages > 0) {
+		for(auto Ix = 0; Ix < numMessages && bResult; ++Ix) {
+			ServerArgs chunkMark;
+			auto* chunkMarkSimpleParam = chunkMark.mutable_setup()->mutable_payload_config()->mutable_simple_params();
+			chunkMarkSimpleParam->set_req_size(maxSplitSize);
+			chunkMarkSimpleParam->set_resp_size(0);
+
+			bResult = dest->stream->Write(chunkMark);
+		}
+	} else {
+		bResult = dest->stream->Write(mark);
+	}
+
+	return bResult;
+}
+
+bool ClientChunkWrite(runsc::ClientData* dest, ClientArgs& mark, bool finalize = true) {
+	const auto& config = mark.setup();
+	const auto& payloadConfig = config.payload_config();
+	const auto& protoParams = payloadConfig.simple_params();
+	const auto& requestSize = protoParams.req_size();
+
+	static const int maxSplitSize = 1024*1024;
+	const int numMessages = requestSize / maxSplitSize;
+	bool bResult = true;
+	if (requestSize > maxSplitSize || numMessages > 0) {
+		for(auto Ix = 0; Ix < numMessages && bResult; ++Ix) {
+			ClientArgs chunkMark;
+			auto* chunkMarkSimpleParam = chunkMark.mutable_setup()->mutable_payload_config()->mutable_simple_params();
+			chunkMarkSimpleParam->set_req_size(maxSplitSize);
+			chunkMarkSimpleParam->set_resp_size(0);
+
+			bResult = dest->stream->Write(chunkMark);
+
+			if (finalize)
+				bResult = dest->stream->WritesDone();
+		}
+	} else {
+		bResult = dest->stream->Write(mark);
+	}
+
+	return bResult;
+}
+
 std::unique_ptr<ScenarioResult> RunScenario(
         const ClientConfig& initial_client_config, size_t num_clients,
         const ServerConfig& initial_server_config, size_t num_servers,
         int warmup_seconds, int benchmark_seconds,
-        int spawn_local_worker_count) {
+        int spawn_local_worker_count)
+{
     // ClientContext allocations (all are destroyed at scope exit)
     list<ClientContext> contexts;
 
@@ -181,7 +235,7 @@ std::unique_ptr<ScenarioResult> RunScenario(
     ClientConfig client_config = initial_client_config;
 
     // Spawn some local workers if desired
-    vector < unique_ptr < QpsWorker >> local_workers;
+    vector<unique_ptr<QpsWorker>> local_workers;
     for (int i = 0; i < abs(spawn_local_worker_count); i++) {
         // act as if we're a new test -- gets a good rng seed
         static bool called_init = false;
@@ -270,7 +324,8 @@ std::unique_ptr<ScenarioResult> RunScenario(
         *args.mutable_setup() = server_config;
         servers[i].stream = servers[i].stub->RunServer(
                 runsc::AllocContext(&contexts));
-        if (!servers[i].stream->Write(args)) {
+        //if (!servers[i].stream->Write(args)) {
+        if (!ChunkWrite(&servers[i], args)) {
             gpr_log(GPR_ERROR, "Could not write args to server %zu", i);
         }
         ServerStatus init_status;
@@ -337,7 +392,8 @@ std::unique_ptr<ScenarioResult> RunScenario(
         *args.mutable_setup() = per_client_config;
         clients[i].stream = clients[i].stub->RunClient(
                 runsc::AllocContext(&contexts));
-        if (!clients[i].stream->Write(args)) {
+        //if (!clients[i].stream->Write(args)) {
+        if(!ClientChunkWrite(&clients[i], args)) {
             gpr_log(GPR_ERROR, "Could not write args to client %zu", i);
         }
         ClientStatus init_status;
@@ -361,13 +417,15 @@ std::unique_ptr<ScenarioResult> RunScenario(
     client_mark.mutable_mark()->set_reset(true);
     for (size_t i = 0; i < num_servers; i++) {
         auto server = &servers[i];
-        if (!server->stream->Write(server_mark)) {
+        //if (!server->stream->Write(server_mark)) {
+        if(!ChunkWrite(server, server_mark)) {
             gpr_log(GPR_ERROR, "Couldn't write mark to server %zu", i);
         }
     }
     for (size_t i = 0; i < num_clients; i++) {
         auto client = &clients[i];
-        if (!client->stream->Write(client_mark)) {
+        //if (!client->stream->Write(client_mark)) {
+        if(!ClientChunkWrite(client, client_mark)) {
             gpr_log(GPR_ERROR, "Couldn't write mark to client %zu", i);
         }
     }
@@ -402,7 +460,8 @@ std::unique_ptr<ScenarioResult> RunScenario(
     gpr_log(GPR_INFO, "Finishing clients");
     for (size_t i = 0; i < num_clients; i++) {
         auto client = &clients[i];
-        if (!client->stream->Write(client_mark)) {
+        //if (!client->stream->Write(client_mark)) {
+        if(!ClientChunkWrite(client, client_mark, false)) {
             gpr_log(GPR_ERROR, "Couldn't write mark to client %zu", i);
         }
         if (!client->stream->WritesDone()) {
@@ -439,7 +498,8 @@ std::unique_ptr<ScenarioResult> RunScenario(
     gpr_log(GPR_INFO, "Finishing servers");
     for (size_t i = 0; i < num_servers; i++) {
         auto server = &servers[i];
-        if (!server->stream->Write(server_mark)) {
+        //if (!server->stream->Write(server_mark)) {
+        if(!ChunkWrite(server, server_mark)) {
             gpr_log(GPR_ERROR, "Couldn't write mark to server %zu", i);
         }
         if (!server->stream->WritesDone()) {

@@ -43,6 +43,7 @@
 #include "utils/parse_json.h"
 #include "utils/report.h"
 #include "utils/benchmark_config.h"
+#include "src/core/lib/support/env.h"
 
 DEFINE_string(scenarios_file, "",
         "JSON file containing an array of Scenario objects");
@@ -125,6 +126,8 @@ static bool QpsDriver() {
 int main(int argc, char **argv) {
     grpc::testing::InitBenchmark(&argc, &argv, true);
 
+    gpr_setenv("GRPC_VERBOSITY", "DEBUG");
+    gpr_log_verbosity_init();
     bool ok = grpc::testing::QpsDriver();
 
     return ok ? 0 : 1;

@@ -35,6 +35,7 @@
 cd $(dirname $0)/../../../grpc_benchmark-build
 # pwd
 
+export GRPC_TRACE=all
 ./qps_json_driver "$@"
 
 if [ "$BQ_RESULT_TABLE" != "" ]

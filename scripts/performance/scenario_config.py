@@ -66,7 +66,7 @@ BIG_GENERIC_PAYLOAD = {
 }
 BIG_PROTO_PAYLOAD = {
   'simple_params': {
-    'req_size': 65536,
+    'req_size': 10485760,
     'resp_size': 0,
   }
 }
@@ -259,8 +259,8 @@ class CXXLanguageExt:
 
   def __init__(self):
     self.safename = 'cxxExt'
-    self.core_limit = 4
-    self.async_threads = 4
+    self.core_limit = 1
+    self.async_threads = 1
 
   def worker_cmdline(self):
     return ['./qps_worker']
@@ -284,6 +284,7 @@ class CXXLanguageExt:
       yield _ping_pong_scenario(
           'cpp_protobuf_async_streaming_ping_pong_%s' % secstr, rpc_type='STREAMING',
           client_type='ASYNC_CLIENT', server_type='ASYNC_SERVER',
+          use_big_payload=True,
           server_core_limit=self.core_limit, async_server_threads=self.async_threads,
           secure=secure)
 
