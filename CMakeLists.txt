@@ -126,7 +126,7 @@ set(services_proto_file "${PROTO_PATH}/${services_file_suffix}.proto")
 set(services_pb_cpp_file      "${GENERATED_PROTOBUF_PATH}/${services_file_suffix}.pb.cc")
 set(services_pb_h_file        "${GENERATED_PROTOBUF_PATH}/${services_file_suffix}.pb.h")
 set(services_grpc_pb_cpp_file "${GENERATED_PROTOBUF_PATH}/${services_file_suffix}.grpc.pb.cc")
-set(service_grpc_pb_h_file    "${GENERATED_PROTOBUF_PATH}/${services_file_suffix}.grpc.pb.h")
+set(services_grpc_pb_h_file    "${GENERATED_PROTOBUF_PATH}/${services_file_suffix}.grpc.pb.h")
 add_custom_command(
     OUTPUT  "${services_pb_h_file}"
             "${services_pb_cpp_file}"
@@ -142,6 +142,29 @@ add_custom_command(
             "--plugin=protoc-gen-grpc=${GRPC_ROOT_DIR}/bin/${GRPC_CPP_PLUGIN}"
             "${services_proto_file}"
     )
+### datastream.proto
+set(datastream_file_suffix "datastream")
+set(datastream_proto_file "${PROTO_PATH}/${datastream_file_suffix}.proto")
+
+set(datastream_pb_cpp_file      "${GENERATED_PROTOBUF_PATH}/${datastream_file_suffix}.pb.cc")
+set(datastream_pb_h_file        "${GENERATED_PROTOBUF_PATH}/${datastream_file_suffix}.pb.h")
+set(datastream_grpc_pb_cpp_file "${GENERATED_PROTOBUF_PATH}/${datastream_file_suffix}.grpc.pb.cc")
+set(datastream_grpc_pb_h_file   "${GENERATED_PROTOBUF_PATH}/${datastream_file_suffix}.grpc.pb.h")
+add_custom_command(
+    OUTPUT  "${datastream_pb_h_file}"
+            "${datastream_pb_cpp_file}"
+            "${datastream_grpc_pb_h_file}"
+            "${datastream_grpc_pb_cpp_file}"
+    COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+    ARGS    "--proto_path=${PROTO_PATH}"
+            "--cpp_out=${GENERATED_PROTOBUF_PATH}"
+            "${datastream_proto_file}"
+    COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+    ARGS    "--proto_path=${PROTO_PATH}"
+            "--grpc_out=${GENERATED_PROTOBUF_PATH}"
+            "--plugin=protoc-gen-grpc=${GRPC_ROOT_DIR}/bin/${GRPC_CPP_PLUGIN}"
+            "${datastream_proto_file}"
+    )
 ###
 set(GENERATED_PROTOBUF_FILES
     ${control_pb_cpp_file}
@@ -154,6 +177,8 @@ set(GENERATED_PROTOBUF_FILES
     ${payloads_grpc_pb_cpp_file}
     ${services_pb_cpp_file}
     ${services_grpc_pb_cpp_file}
+    ${datastream_pb_cpp_file}
+    ${datastream_grpc_pb_cpp_file}
     )
 include_directories(${GENERATED_PROTOBUF_PATH})
 link_libraries(grpc++_unsecure grpc gpr ${PROTOBUF_LIBRARY})
@@ -227,7 +252,7 @@ include_directories(
     ${USER_INCLUDE_PATH}
     ${GRPC_INCLUDE}
     ${GTEST_INCLUDE_DIRS}
-    )
+)
 link_directories(${Boost_LIBRARY_DIRS} ${USER_LIB_PATH} ${GRPC_LIBRARY_DIR} ${PROTOBUF_LIBRARY_DIR})
 
 set(DEPENDENCIES_LIBRARIES
@@ -242,15 +267,19 @@ set(DEPENDENCIES_LIBRARIES
     )
 
 add_custom_target(headers SOURCES ${GRPC_BENCHMARK_HDRS})
-# # server
-# set(PRJ_SERVER_NAME "${PRJ_NAME}_server")
-# add_executable(${PRJ_SERVER_NAME} main.cpp ${GRPC_BENCHMARK_SRC})
-# target_link_libraries(${PRJ_SERVER_NAME} ${DEPENDENCIES_LIBRARIES})
 
 # qps_json_driver
-add_executable(qps_json_driver qps_json_driver.cpp ${GRPC_BENCHMARK_SRC})
-target_link_libraries(qps_json_driver ${DEPENDENCIES_LIBRARIES})
+# add_executable(qps_json_driver qps_json_driver.cpp ${GRPC_BENCHMARK_SRC})
+# target_link_libraries(qps_json_driver ${DEPENDENCIES_LIBRARIES})
 
 # worker
-add_executable(qps_worker worker.cpp ${GRPC_BENCHMARK_SRC})
-target_link_libraries(qps_worker ${DEPENDENCIES_LIBRARIES})
+# add_executable(qps_worker worker.cpp ${GRPC_BENCHMARK_SRC})
+# target_link_libraries(qps_worker ${DEPENDENCIES_LIBRARIES})
+
+# datastream client
+add_executable(datastreamclient datastreamclient.cpp utils/test_config_cpp.cpp ${GENERATED_PROTOBUF_FILES})
+target_link_libraries(datastreamclient ${DEPENDENCIES_LIBRARIES})
+
+# datastream server
+add_executable(datastreamserver datastreamserver.cpp ${GENERATED_PROTOBUF_FILES})
+target_link_libraries(datastreamserver ${DEPENDENCIES_LIBRARIES})

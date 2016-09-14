@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package datastream;
+
+service DataStream {
+  	rpc SendDataStream(DataChunkRequest) returns (DataChunkSummary) {}
+}
+
+message DataChunkRequest {
+  string name = 1; // hash of the data chunk
+  int32 totalLength = 2;
+  int32 dataLength = 3;
+  int32 offset = 4;
+  bytes	body = 5;
+}
+
+message DataChunkSummary {
+	string name = 1; // hash of the data chunk
+	int32  numChunks = 2;
+	uint32 elapsed_time = 3;
+}

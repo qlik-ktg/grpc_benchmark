@@ -66,7 +66,7 @@ BIG_GENERIC_PAYLOAD = {
 }
 BIG_PROTO_PAYLOAD = {
   'simple_params': {
-    'req_size': 10485760,
+    'req_size': 2097152,
     'resp_size': 0,
   }
 }
