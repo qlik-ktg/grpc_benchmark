@@ -73,6 +73,7 @@ int responseCount;
 
 static Status ProcessSimpleRPC(const DataChunkRequest* request, DataChunkSummary* response) {
 	responseCount++;
+	std::cout << "Received message" << std::endl;
 	return Status::OK;
 }
 
@@ -155,10 +156,12 @@ private:
 public:
 	ServerImpl() {
 		num_threads_ = 5;
-		std::string server_address("localhost:50051");
+		std::cout << "Listening at 10.88.5.100:50051" << std::endl;
+		std::string server_address("10.88.5.100:50051");
 		builder.AddListeningPort(server_address,
 				grpc::InsecureServerCredentials());
 		builder.RegisterService(&service_);
+		builder.SetMaxMessageSize(1000*1024*1024);
 
 		auto process_rpc_bound = std::bind(ProcessSimpleRPC, _1, _2);
 

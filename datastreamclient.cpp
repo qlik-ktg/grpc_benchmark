@@ -28,6 +28,8 @@ DEFINE_int32(num_clients, 2, "number of clients");
 DEFINE_int32(data_size, 10, "size of data in MB");
 DEFINE_int32(num_iterations, 10, "number of iterations");
 DEFINE_int32(chunk_size, 64, "chunk size");
+DEFINE_string(address,"0.0.0.0", "server address");
+DEFINE_int32(port, 10000, "port");
 
 using grpc::Channel;
 using grpc::ClientAsyncResponseReader;
@@ -152,7 +154,7 @@ public:
 		Status status;
 
 		for (auto Ix = 0; Ix < numRPCs; ++Ix) {
-			const auto dataSize = Data_.size();
+			const auto dataSize = Data.size();
 			const auto numMessage = dataSize / chunkSize;
 
 			boost::uuids::uuid uuid = boost::uuids::random_generator()();
@@ -163,7 +165,7 @@ public:
 				const int offset = Jx * chunkSize;
 				const int bytesToSend = std::min(chunkSize, dataSize - offset);
 				request.set_name(uuidStr);
-				request.set_totallength(dataSize);
+				request.set_totallength(dataSize*8);
 				request.set_offset(offset);
 				request.set_datalength(bytesToSend);
 				request.set_body(&Data[0] + offset, bytesToSend);
@@ -223,8 +225,13 @@ private:
 	std::thread collector_;
 };
 
-void startClient(const std::vector<double>& Data, int num_iterations, int chunk_size) {
-	AsyncDataStreamClient<double> asyncClient(grpc::CreateChannel("localhost:50051",
+void startClient(const std::string& host, int port,
+		const std::vector<double>& Data, int num_iterations, int chunk_size)
+{
+	std::stringstream ss;
+	ss << host << ":" << port;
+	std::cout << "communicates to: " << host << ":" << port << std::endl;
+	AsyncDataStreamClient<double> asyncClient(grpc::CreateChannel(ss.str().c_str(),
 							grpc::InsecureChannelCredentials()), Data, num_iterations, chunk_size);
 }
 
@@ -234,12 +241,12 @@ int main(int argc, char** argv) {
 	const size_t dataSize = FLAGS_data_size *1024*1024;
 	std::vector<double> Data(dataSize);
 	if (FLAGS_num_clients <= 1) {
-		startClient(Data, FLAGS_num_iterations, FLAGS_chunk_size*1024);
+		startClient(FLAGS_address, FLAGS_port, Data, FLAGS_num_iterations, FLAGS_chunk_size*1024);
 	} else {
 		std::vector<std::thread> clients(FLAGS_num_clients);
 		for(auto Ix = 0; Ix < FLAGS_num_clients; ++Ix) {
 			cout << "DataStreamClient " << Ix << endl;
-			clients[Ix] = std::thread(&startClient, Data, FLAGS_num_iterations, FLAGS_chunk_size*1024);
+			clients[Ix] = std::thread(&startClient, FLAGS_address, FLAGS_port, Data, FLAGS_num_iterations, FLAGS_chunk_size*1024);
 		}
 
 		for(auto Ix = 0; Ix < FLAGS_num_clients; ++Ix) {
